@@ -1,0 +1,81 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ongres</groupId>
+    <artifactId>build-parent</artifactId>
+    <version>1.0.8</version>
+  </parent>
+
+  <artifactId>fluent-process</artifactId>
+  <version>1.0.0</version>
+
+  <description>
+    Fluent Process is a Java 8+ library to provide a Process interface that is fluent and Java Streams oriented.
+  </description>
+
+  <inceptionYear>2020</inceptionYear>
+
+  <organization>
+    <name>OnGres, Inc.</name>
+    <url>https://www.ongres.com</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <id>@teoincontatto</id>
+      <name>Matteo Melli</name>
+    </developer>
+  </developers>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <url>https://gitlab.com/ongresinc/fluent-process</url>
+
+  <scm>
+    <url>https://gitlab.com/ongresinc/fluent-process</url>
+  </scm>
+
+  <properties>
+  </properties>
+
+  <dependencies>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <licenseName>apache_v2</licenseName>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check-file-header</goal>
+            </goals>
+            <phase>process-sources</phase>
+            <configuration>
+              <failOnMissingHeader>true</failOnMissingHeader>
+              <failOnNotUptodateHeader>true</failOnNotUptodateHeader>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
