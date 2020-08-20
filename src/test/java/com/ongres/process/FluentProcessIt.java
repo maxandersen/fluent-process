@@ -20,6 +20,8 @@
 
 package com.ongres.process;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -93,6 +95,15 @@ public class FluentProcessIt {
               .inputStream(inputStream)
               .get());
     }
+  }
+
+  @Test
+  public void testWriteToOutputStream() throws Exception {
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    FluentProcess.start("sh", "-c", "echo hello world")
+        .writeToOutputStream(outputStream);
+    Assertions.assertEquals("hello world\n",
+        new String(outputStream.toByteArray(), StandardCharsets.UTF_8));
   }
 
   @Test

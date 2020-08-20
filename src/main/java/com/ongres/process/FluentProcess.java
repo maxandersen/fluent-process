@@ -95,6 +95,9 @@ public class FluentProcess implements AutoCloseable {
     this.closeAfterLast = builder.closeAfterLast;
     this.outputs = builder.outputs;
     this.closeables = new ArrayList<>();
+    registerCloseable(process.getOutputStream());
+    registerCloseable(process.getInputStream());
+    registerCloseable(process.getErrorStream());
     this.end = Optional.ofNullable(start)
         .flatMap(s -> Optional.ofNullable(timeout).map(t -> s.plus(t)));
   }
@@ -488,21 +491,32 @@ public class FluentProcess implements AutoCloseable {
    * Write content of an {@code InputStream} to the process stdin.
    */
   public void writeToStdin(InputStream inputStream) {
+    writeToStdin(inputStream, true);
+  }
+
+  private void writeToStdin(InputStream inputStream, boolean closeProcess) {
     try {
       OutputStream outputStream = process.getOutputStream();
-      byte[] inputBuffer = new byte[8192];
-      while (process.isAlive()) {
-        int value = inputStream.read(inputBuffer);
-        if (value >= 0) {
-          if (value > 0) {
-            outputStream.write(inputBuffer, 0, value);
+      try {
+        byte[] inputBuffer = new byte[8192];
+        while (true) {
+          int value = inputStream.read(inputBuffer);
+          if (value >= 0) {
+            if (value > 0) {
+              outputStream.write(inputBuffer, 0, value);
+            }
+          } else {
+            break;
           }
-        } else {
-          outputStream.close();
-          break;
+        }
+      } finally {
+        outputStream.close();
+        if (closeProcess) {
+          process.waitFor();
+          close();
         }
       }
-    } catch (IOException ex) {
+    } catch (IOException | InterruptedException ex) {
       throw new RuntimeException(ex);
     }
   }
@@ -512,23 +526,28 @@ public class FluentProcess implements AutoCloseable {
    */
   public void writeToOutputStream(OutputStream outputStream) {
     try {
-      InputStream inputStream = streamInputs().filter(e -> e.getKey() == STDOUT)
-          .map(Map.Entry::getValue).findAny().orElse(null);
-      if (inputStream != null) {
-        byte[] inputBuffer = new byte[8192];
-        while (process.isAlive()) {
-          int value = inputStream.read(inputBuffer);
-          if (value >= 0) {
-            if (value > 0) {
-              outputStream.write(inputBuffer, 0, value);
+      registerCloseable(outputStream);
+      try {
+        InputStream inputStream = streamInputs().filter(e -> e.getKey() == STDOUT)
+            .map(Map.Entry::getValue).findAny().orElse(null);
+        if (inputStream != null) {
+          byte[] inputBuffer = new byte[8192];
+          while (true) {
+            int value = inputStream.read(inputBuffer);
+            if (value >= 0) {
+              if (value > 0) {
+                outputStream.write(inputBuffer, 0, value);
+              }
+            } else {
+              break;
             }
-          } else {
-            outputStream.close();
-            break;
           }
         }
+      } finally {
+        process.waitFor();
+        close();
       }
-    } catch (IOException ex) {
+    } catch (IOException | InterruptedException ex) {
       throw new RuntimeException(ex);
     }
   }
@@ -675,10 +694,10 @@ public class FluentProcess implements AutoCloseable {
     final CompletableFuture<Void> future;
     if (executor == null) {
       future = CompletableFuture
-          .runAsync(() -> fluentProcess.writeToStdin(inputStream));
+          .runAsync(() -> fluentProcess.writeToStdin(inputStream, false));
     } else {
       future = CompletableFuture
-          .runAsync(() -> fluentProcess.writeToStdin(inputStream), executor);
+          .runAsync(() -> fluentProcess.writeToStdin(inputStream, false), executor);
     }
     final CompletableFuture<Void> futureWithClose = future
         .thenRun(() -> {
