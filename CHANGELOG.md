@@ -1,3 +1,10 @@
+# 1.0.1
+
+Fixes:
+
+* Closing process when terminating to stdin or stdout
+* Multiline adding multiple args instead of a single one
+
 # 1.0.0
 
 Features:
