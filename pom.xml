@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>fluent-process</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 
   <description>
     Fluent Process is a Java 8+ library to provide a Process interface that is fluent and Java Streams oriented.
