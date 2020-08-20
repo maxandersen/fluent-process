@@ -90,22 +90,21 @@ public class FluentProcessBuilder {
    * Add a multiline command argument.
    */
   public FluentProcessBuilder multilineArg(String...lines) {
-    this.args.addAll(Arrays.asList(lines));
-    return this;
-  }
-
-  /**
-   * Add a multiline command argument.
-   */
-  public FluentProcessBuilder multilineArg(Stream<String> lines) {
-    return multilineArg(lines.collect(Collectors.toList()));
+    return multilineArg(Arrays.asList(lines).stream());
   }
 
   /**
    * Add a multiline command argument.
    */
   public FluentProcessBuilder multilineArg(Collection<String> lines) {
-    this.args.addAll(lines);
+    return multilineArg(lines.stream());
+  }
+
+  /**
+   * Add a multiline command argument.
+   */
+  public FluentProcessBuilder multilineArg(Stream<String> lines) {
+    this.args.add(lines.collect(Collectors.joining(FluentProcess.NEWLINE_DELIMITER)));
     return this;
   }
 
