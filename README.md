@@ -32,7 +32,7 @@ FluentProcess.start(
     "sh",
     "-c",
     "echo hello; echo world")
-        .chain("cat")
+        .pipe("cat")
         .stream()
 ```
 
@@ -40,7 +40,7 @@ FluentProcess.start(
 
 ```java
 FluentProcess.start("cat")
-        .withInputStream(
+        .inputStream(
           Stream.of("hello", "world"))
         .stream()
 ```
@@ -64,7 +64,7 @@ try (Stream<String> stream = FluentProcess.start(
     "sh",
     "-c",
     "echo hello; echo world; exit 79")
-        .withDontCloseAfterLast()
+        .withoutCloseAfterLast()
         .stream()) {
     stream
         .peek(System.out::println)
