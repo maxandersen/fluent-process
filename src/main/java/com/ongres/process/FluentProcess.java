@@ -606,7 +606,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Pipe this process stdout with process started from specified command.
+   * Pipe this process stdout with the stdin of process started from specified command.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -626,7 +626,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write an {@code InputStream} to this process stdout.
+   * Write an {@code InputStream} to this process stdin.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -638,7 +638,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write an {@code InputStream} to this process stdout.
+   * Write an {@code InputStream} to this process stdin.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -650,7 +650,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<String>} to this process stdout.
+   * Write a {@code Stream<String>} to this process stdin.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -663,7 +663,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<String>} to this process stdout.
+   * Write a {@code Stream<String>} to this process stdin.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -676,7 +676,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<byte[]>} to this process stdout.
+   * Write a {@code Stream<byte[]>} to this process stdin.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -689,7 +689,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<byte[]>} to this process stdout.
+   * Write a {@code Stream<byte[]>} to this process stdin.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -702,7 +702,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write an {@code InputStream} to this process stdout and closes it.
+   * Write an {@code InputStream} to this process stdin and closes it.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -715,7 +715,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write an {@code InputStream} to this process stdout.
+   * Write an {@code InputStream} to this process stdin and closes it.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -728,7 +728,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<String>} to this process stdout.
+   * Write a {@code Stream<String>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -741,7 +741,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<String>} to this process stdout.
+   * Write a {@code Stream<String>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -754,7 +754,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<byte[]>} to this process stdout.
+   * Write a {@code Stream<byte[]>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -767,7 +767,7 @@ public class FluentProcess implements AutoCloseable {
   }
 
   /**
-   * Write a {@code Stream<byte[]>} to this process stdout.
+   * Write a {@code Stream<byte[]>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
