@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -92,7 +93,7 @@ public class FluentProcessIt {
     try (Stream<String> inputStream = Stream.of("hello world")) {
       Assertions.assertEquals("hello world",
           FluentProcess.start("cat")
-              .inputStream(inputStream)
+              .lastInputStream(inputStream)
               .get());
     }
   }
@@ -248,6 +249,28 @@ public class FluentProcessIt {
             .withTimeout(Duration.of(1, ChronoUnit.SECONDS))
             .stream()
             .count()));
+  }
+
+  @Test
+  public void testInteractive() throws Exception {
+    FluentProcess fluentProcess = FluentProcess.start("sh", "-ec", "read INPUT; echo \"$INPUT\"")
+        .withoutCloseAfterLast();
+    try (Stream<String> outputStream = fluentProcess.stream()) {
+      Iterator<String> outputIterator = outputStream.iterator();
+      fluentProcess.inputStream(Stream.of("hello world"));
+      Assertions.assertTrue(outputIterator.hasNext());
+      Assertions.assertEquals("hello world", outputIterator.next());
+      Assertions.assertFalse(outputIterator.hasNext());
+    }
+    try (Stream<String> inputStream = Stream.of("hello world");
+        FluentProcess fluentProcess2 = FluentProcess.start(
+            "sh", "-ec", "read INPUT; echo \"$INPUT\"")
+            .withoutCloseAfterLast()) {
+      Assertions.assertEquals("hello world",
+          fluentProcess2
+              .inputStream(inputStream)
+              .get());
+    }
   }
 
 }
