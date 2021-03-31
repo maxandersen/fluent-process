@@ -79,7 +79,6 @@ public class FluentProcess implements AutoCloseable {
   private final Set<Integer> allowedExitCodes;
   private final Duration timeout;
   private final boolean closeAfterLast;
-  private final boolean closeAfterNextInputStream;
   private final Map<Integer, Integer> outputs;
   private final ArrayList<Closeable> closeables;
   private final Optional<Instant> end;
@@ -94,7 +93,6 @@ public class FluentProcess implements AutoCloseable {
     this.allowedExitCodes = builder.allowedExitCodes;
     this.timeout = builder.timeout;
     this.closeAfterLast = builder.closeAfterLast;
-    this.closeAfterNextInputStream = false;
     this.outputs = builder.outputs;
     this.closeables = new ArrayList<>();
     registerCloseable(process.getOutputStream());
@@ -111,7 +109,6 @@ public class FluentProcess implements AutoCloseable {
     this.allowedExitCodes = allowedExitCodes;
     this.timeout = parent.timeout;
     this.closeAfterLast = parent.closeAfterLast;
-    this.closeAfterNextInputStream = parent.closeAfterNextInputStream;
     this.outputs = parent.outputs;
     this.closeables = parent.closeables;
     this.end = Optional.ofNullable(start)
@@ -125,22 +122,19 @@ public class FluentProcess implements AutoCloseable {
     this.allowedExitCodes = parent.allowedExitCodes;
     this.timeout = timeout;
     this.closeAfterLast = parent.closeAfterLast;
-    this.closeAfterNextInputStream = parent.closeAfterNextInputStream;
     this.outputs = parent.outputs;
     this.closeables = parent.closeables;
     this.end = Optional.ofNullable(start)
         .flatMap(s -> Optional.ofNullable(timeout).map(t -> s.plus(t)));
   }
 
-  private FluentProcess(FluentProcess parent, boolean closeAfterLast,
-      boolean closeAfterNextInputStream) {
+  private FluentProcess(FluentProcess parent, boolean closeAfterLast) {
     this.processBuilder = parent.processBuilder;
     this.process = parent.process;
     this.start = parent.start;
     this.allowedExitCodes = parent.allowedExitCodes;
     this.timeout = parent.timeout;
     this.closeAfterLast = closeAfterLast;
-    this.closeAfterNextInputStream = closeAfterNextInputStream;
     this.outputs = parent.outputs;
     this.closeables = parent.closeables;
     this.end = Optional.ofNullable(start)
@@ -154,7 +148,6 @@ public class FluentProcess implements AutoCloseable {
     this.allowedExitCodes = parent.allowedExitCodes;
     this.timeout = parent.timeout;
     this.closeAfterLast = parent.closeAfterLast;
-    this.closeAfterNextInputStream = parent.closeAfterNextInputStream;
     this.outputs = outputs;
     this.closeables = parent.closeables;
     this.end = Optional.ofNullable(start)
@@ -222,7 +215,7 @@ public class FluentProcess implements AutoCloseable {
    * </p>
    */
   public FluentProcess withoutCloseAfterLast() {
-    return new FluentProcess(this, false, closeAfterNextInputStream);
+    return new FluentProcess(this, false);
   }
 
   /**
@@ -232,7 +225,7 @@ public class FluentProcess implements AutoCloseable {
    * </p>
    */
   public FluentProcess withCloseAfterLast() {
-    return new FluentProcess(this, true, closeAfterNextInputStream);
+    return new FluentProcess(this, true);
   }
 
   /**
@@ -586,7 +579,7 @@ public class FluentProcess implements AutoCloseable {
     InputStream inputStream = new ByteArrayStreamInputStream(
         withoutCloseAfterLast().streamStdoutBytes());
     registerCloseable(inputStream);
-    runAsyncWithStdin(fluentProcess, inputStream, this::close, null);
+    runAsyncWithStdin(fluentProcess, inputStream, this::close, null, true);
     return fluentProcess;
   }
 
@@ -601,7 +594,7 @@ public class FluentProcess implements AutoCloseable {
     InputStream inputStream = new ByteArrayStreamInputStream(
         withoutCloseAfterLast().streamStdoutBytes());
     registerCloseable(inputStream);
-    runAsyncWithStdin(fluentProcess, inputStream, this::close, executor);
+    runAsyncWithStdin(fluentProcess, inputStream, this::close, executor, true);
     return fluentProcess;
   }
 
@@ -620,8 +613,7 @@ public class FluentProcess implements AutoCloseable {
     FluentProcess fluentProcess = new FluentProcessBuilder(command)
         .args(args)
         .start();
-    new FluentProcess(this, closeAfterLast, true)
-        .runAsyncWithStdin(fluentProcess, inputStream, this::close, null);
+    runAsyncWithStdin(fluentProcess, inputStream, this::close, null, true);
     return fluentProcess;
   }
 
@@ -632,8 +624,8 @@ public class FluentProcess implements AutoCloseable {
    * The thread will be closed when the process exits.
    * </p>
    */
-  public FluentProcess inputStream(InputStream inputStream) {
-    runAsyncWithStdin(this, inputStream, inputStream::close, null);
+  public FluentProcess inputStreamWihtoutClosing(InputStream inputStream) {
+    runAsyncWithStdin(this, inputStream, inputStream::close, null, false);
     return this;
   }
 
@@ -644,13 +636,89 @@ public class FluentProcess implements AutoCloseable {
    * The thread will be closed when the process exits.
    * </p>
    */
-  public FluentProcess inputStream(InputStream inputStream, Executor executor) {
-    runAsyncWithStdin(this, inputStream, inputStream::close, executor);
+  public FluentProcess inputStreamWihtoutClosing(InputStream inputStream, Executor executor) {
+    runAsyncWithStdin(this, inputStream, inputStream::close, executor, false);
     return this;
   }
 
   /**
    * Write a {@code Stream<String>} to this process stdin.
+   * <p>
+   * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
+   * The thread will be closed when the process exits.
+   * </p>
+   */
+  public FluentProcess inputStreamWihtoutClosing(Stream<String> stream) {
+    InputStream inputStream = new LineStreamInputStream(stream);
+    runAsyncWithStdin(this, inputStream, inputStream::close, null, false);
+    return this;
+  }
+
+  /**
+   * Write a {@code Stream<String>} to this process stdin.
+   * <p>
+   * This method create a thread using the specified {@code Executor}.
+   * The thread will be closed when the process exits.
+   * </p>
+   */
+  public FluentProcess inputStreamWihtoutClosing(Stream<String> stream, Executor executor) {
+    InputStream inputStream = new LineStreamInputStream(stream);
+    runAsyncWithStdin(this, inputStream, inputStream::close, executor, false);
+    return this;
+  }
+
+  /**
+   * Write a {@code Stream<byte[]>} to this process stdin.
+   * <p>
+   * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
+   * The thread will be closed when the process exits.
+   * </p>
+   */
+  public FluentProcess inputStreamOfBytesWihtoutClosing(Stream<byte[]> stream) {
+    InputStream inputStream = new ByteArrayStreamInputStream(stream);
+    runAsyncWithStdin(this, inputStream, inputStream::close, null, false);
+    return this;
+  }
+
+  /**
+   * Write a {@code Stream<byte[]>} to this process stdin.
+   * <p>
+   * This method create a thread using the specified {@code Executor}.
+   * The thread will be closed when the process exits.
+   * </p>
+   */
+  public FluentProcess inputStreamOfBytesWihtoutClosing(Stream<byte[]> stream, Executor executor) {
+    InputStream inputStream = new ByteArrayStreamInputStream(stream);
+    runAsyncWithStdin(this, inputStream, inputStream::close, executor, false);
+    return this;
+  }
+
+  /**
+   * Write an {@code InputStream} to this process stdin and closes it.
+   * <p>
+   * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
+   * The thread will be closed when the process exits.
+   * </p>
+   */
+  public FluentProcess inputStream(InputStream inputStream) {
+    runAsyncWithStdin(this, inputStream, inputStream::close, null, true);
+    return this;
+  }
+
+  /**
+   * Write an {@code InputStream} to this process stdin and closes it.
+   * <p>
+   * This method create a thread using the specified {@code Executor}.
+   * The thread will be closed when the process exits.
+   * </p>
+   */
+  public FluentProcess inputStream(InputStream inputStream, Executor executor) {
+    runAsyncWithStdin(this, inputStream, inputStream::close, executor, true);
+    return this;
+  }
+
+  /**
+   * Write a {@code Stream<String>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -658,12 +726,12 @@ public class FluentProcess implements AutoCloseable {
    */
   public FluentProcess inputStream(Stream<String> stream) {
     InputStream inputStream = new LineStreamInputStream(stream);
-    runAsyncWithStdin(this, inputStream, inputStream::close, null);
+    runAsyncWithStdin(this, inputStream, inputStream::close, null, true);
     return this;
   }
 
   /**
-   * Write a {@code Stream<String>} to this process stdin.
+   * Write a {@code Stream<String>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -671,12 +739,12 @@ public class FluentProcess implements AutoCloseable {
    */
   public FluentProcess inputStream(Stream<String> stream, Executor executor) {
     InputStream inputStream = new LineStreamInputStream(stream);
-    runAsyncWithStdin(this, inputStream, inputStream::close, executor);
+    runAsyncWithStdin(this, inputStream, inputStream::close, executor, true);
     return this;
   }
 
   /**
-   * Write a {@code Stream<byte[]>} to this process stdin.
+   * Write a {@code Stream<byte[]>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
    * The thread will be closed when the process exits.
@@ -684,12 +752,12 @@ public class FluentProcess implements AutoCloseable {
    */
   public FluentProcess inputStreamOfBytes(Stream<byte[]> stream) {
     InputStream inputStream = new ByteArrayStreamInputStream(stream);
-    runAsyncWithStdin(this, inputStream, inputStream::close, null);
+    runAsyncWithStdin(this, inputStream, inputStream::close, null, true);
     return this;
   }
 
   /**
-   * Write a {@code Stream<byte[]>} to this process stdin.
+   * Write a {@code Stream<byte[]>} to this process stdin and closes it.
    * <p>
    * This method create a thread using the specified {@code Executor}.
    * The thread will be closed when the process exits.
@@ -697,99 +765,22 @@ public class FluentProcess implements AutoCloseable {
    */
   public FluentProcess inputStreamOfBytes(Stream<byte[]> stream, Executor executor) {
     InputStream inputStream = new ByteArrayStreamInputStream(stream);
-    runAsyncWithStdin(this, inputStream, inputStream::close, executor);
+    runAsyncWithStdin(this, inputStream, inputStream::close, executor, true);
     return this;
   }
 
-  /**
-   * Write an {@code InputStream} to this process stdin and closes it.
-   * <p>
-   * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
-   * The thread will be closed when the process exits.
-   * </p>
-   */
-  @SuppressWarnings("resource")
-  public FluentProcess lastInputStream(InputStream inputStream) {
-    return new FluentProcess(this, closeAfterLast, true)
-        .inputStream(inputStream);
-  }
-
-  /**
-   * Write an {@code InputStream} to this process stdin and closes it.
-   * <p>
-   * This method create a thread using the specified {@code Executor}.
-   * The thread will be closed when the process exits.
-   * </p>
-   */
-  @SuppressWarnings("resource")
-  public FluentProcess lastInputStream(InputStream inputStream, Executor executor) {
-    return new FluentProcess(this, closeAfterLast, true)
-        .inputStream(inputStream, executor);
-  }
-
-  /**
-   * Write a {@code Stream<String>} to this process stdin and closes it.
-   * <p>
-   * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
-   * The thread will be closed when the process exits.
-   * </p>
-   */
-  @SuppressWarnings("resource")
-  public FluentProcess lastInputStream(Stream<String> stream) {
-    return new FluentProcess(this, closeAfterLast, true)
-        .inputStream(stream);
-  }
-
-  /**
-   * Write a {@code Stream<String>} to this process stdin and closes it.
-   * <p>
-   * This method create a thread using the specified {@code Executor}.
-   * The thread will be closed when the process exits.
-   * </p>
-   */
-  @SuppressWarnings("resource")
-  public FluentProcess lastInputStream(Stream<String> stream, Executor executor) {
-    return new FluentProcess(this, closeAfterLast, true)
-        .inputStream(stream, executor);
-  }
-
-  /**
-   * Write a {@code Stream<byte[]>} to this process stdin and closes it.
-   * <p>
-   * This method create a thread using the default {@code CompletableFuture} {@code Executor}.
-   * The thread will be closed when the process exits.
-   * </p>
-   */
-  @SuppressWarnings("resource")
-  public FluentProcess lastInputStreamOfBytes(Stream<byte[]> stream) {
-    return new FluentProcess(this, closeAfterLast, true)
-        .inputStreamOfBytes(stream);
-  }
-
-  /**
-   * Write a {@code Stream<byte[]>} to this process stdin and closes it.
-   * <p>
-   * This method create a thread using the specified {@code Executor}.
-   * The thread will be closed when the process exits.
-   * </p>
-   */
-  @SuppressWarnings("resource")
-  public FluentProcess lastInputStreamOfBytes(Stream<byte[]> stream, Executor executor) {
-    return new FluentProcess(this, closeAfterLast, true)
-        .inputStreamOfBytes(stream, executor);
-  }
-
   private void runAsyncWithStdin(FluentProcess fluentProcess,
-      InputStream inputStream, AutoCloseable closeable, Executor executor) {
+      InputStream inputStream, AutoCloseable closeable, Executor executor,
+      boolean closeStdin) {
     final CompletableFuture<Void> future;
     if (executor == null) {
       future = CompletableFuture
           .runAsync(() -> fluentProcess.writeToStdin(
-              inputStream, closeAfterNextInputStream, false));
+              inputStream, closeStdin, false));
     } else {
       future = CompletableFuture
           .runAsync(() -> fluentProcess.writeToStdin(
-              inputStream, closeAfterNextInputStream, false),
+              inputStream, closeStdin, false),
               executor);
     }
     final CompletableFuture<Void> futureWithClose = future
