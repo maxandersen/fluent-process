@@ -55,6 +55,16 @@ public class FluentProcess implements AutoCloseable {
   public static final int STDOUT = 1;
 
   public static final String NEWLINE_DELIMITER = "\n";
+  public static final String DEFAULT_SHELLPREFIX = "set -euo pipefail;";
+
+  private static String defaultShell;
+
+  static String getDefaultShell() {
+    if(defaultShell==null) {
+      defaultShell = start("which", "bash").get();
+    }
+    return defaultShell;
+  }
 
   /**
    * Build a process from a command with (optional) arguments.
@@ -82,6 +92,8 @@ public class FluentProcess implements AutoCloseable {
   private final Map<Integer, Integer> outputs;
   private final ArrayList<Closeable> closeables;
   private final Optional<Instant> end;
+  private final String shell;
+  private final String shellPrefix;
 
   public FluentProcess(FluentProcessBuilder builder,
       CustomProcessBuilder<?> processBuilder,
@@ -95,6 +107,8 @@ public class FluentProcess implements AutoCloseable {
     this.closeAfterLast = builder.closeAfterLast;
     this.outputs = builder.outputs;
     this.closeables = new ArrayList<>();
+    this.shell = builder.shell;
+    this.shellPrefix = builder.shellPrefix;
     registerCloseable(process.getOutputStream());
     registerCloseable(process.getInputStream());
     registerCloseable(process.getErrorStream());
@@ -111,6 +125,8 @@ public class FluentProcess implements AutoCloseable {
     this.closeAfterLast = parent.closeAfterLast;
     this.outputs = parent.outputs;
     this.closeables = parent.closeables;
+    this.shell = parent.shell;
+    this.shellPrefix = parent.shellPrefix==null? DEFAULT_SHELLPREFIX :parent.shellPrefix;
     this.end = Optional.ofNullable(start)
         .flatMap(s -> Optional.ofNullable(timeout).map(t -> s.plus(t)));
   }
@@ -124,6 +140,8 @@ public class FluentProcess implements AutoCloseable {
     this.closeAfterLast = parent.closeAfterLast;
     this.outputs = parent.outputs;
     this.closeables = parent.closeables;
+    this.shell = parent.shell;
+    this.shellPrefix = parent.shellPrefix==null? DEFAULT_SHELLPREFIX :parent.shellPrefix;
     this.end = Optional.ofNullable(start)
         .flatMap(s -> Optional.ofNullable(timeout).map(t -> s.plus(t)));
   }
@@ -137,6 +155,8 @@ public class FluentProcess implements AutoCloseable {
     this.closeAfterLast = closeAfterLast;
     this.outputs = parent.outputs;
     this.closeables = parent.closeables;
+    this.shell = parent.shell;
+    this.shellPrefix = parent.shellPrefix==null? DEFAULT_SHELLPREFIX :parent.shellPrefix;
     this.end = Optional.ofNullable(start)
         .flatMap(s -> Optional.ofNullable(timeout).map(t -> s.plus(t)));
   }
@@ -150,8 +170,30 @@ public class FluentProcess implements AutoCloseable {
     this.closeAfterLast = parent.closeAfterLast;
     this.outputs = outputs;
     this.closeables = parent.closeables;
+    this.shell = parent.shell;
+    this.shellPrefix = parent.shellPrefix==null? DEFAULT_SHELLPREFIX :parent.shellPrefix;
     this.end = Optional.ofNullable(start)
         .flatMap(s -> Optional.ofNullable(timeout).map(t -> s.plus(t)));
+  }
+
+    public static FluentProcess $(String cmd) {
+        return shell(cmd);
+    }
+
+    public static FluentProcess shell(String s) {
+        return start(getDefaultShell(), "-c", s);
+    }
+
+  public FluentProcess pipe$(String cmd) {
+      return pipeShell(cmd);
+    }
+
+    public FluentProcess pipeShell(String s) {
+      return pipe(getShell(), "-c", s);
+    }
+
+  public String getShell() {
+    return shell==null?getDefaultShell():shell;
   }
 
   /**
@@ -905,5 +947,6 @@ public class FluentProcess implements AutoCloseable {
     }
     return null;
   }
+
 
 }

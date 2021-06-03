@@ -36,7 +36,7 @@ class JdkProcessBuilder extends CustomProcessBuilder<JdkProcess> {
   JdkProcessBuilder(FluentProcessBuilder builder) {
     this.processBuilder = new ProcessBuilder(
         Stream.concat(
-            Stream.of(builder.command),
+            builder.asShell?Stream.of(builder.getShell(), "-c", builder.shellPrefix + builder.command) : Stream.of(builder.command),
             builder.args.stream()
             ).toArray(String[]::new))
         .redirectError(Redirect.PIPE)

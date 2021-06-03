@@ -42,6 +42,31 @@ public class FluentProcessIt {
   }
 
   @Test
+  public void testShell() throws Exception {
+    Assertions.assertIterableEquals(
+            Arrays.asList("hello", "world"),
+            FluentProcess.shell("echo hello; echo world")
+                    .stream().collect(Collectors.toList()));
+  }
+
+  @Test
+  public void testShellPipe() throws Exception {
+    Assertions.assertIterableEquals(
+            Arrays.asList("hello", "world"),
+            FluentProcess.$("echo hello; echo world")
+                    .pipe$("cat")
+                    .stream().collect(Collectors.toList()));
+  }
+
+  @Test
+  public void testShellBuilder() throws Exception {
+    Assertions.assertIterableEquals(
+            Arrays.asList("hello", "world"),
+            FluentProcess.builder("echo hello; echo world").as$()
+                    .start().pipe$("cat")
+                    .stream().collect(Collectors.toList()));
+  }
+  @Test
   public void testSuccessful() throws Exception {
     Assertions.assertTrue(FluentProcess.start("sh", "-c", "echo hello world")
         .isSuccessful());
@@ -119,7 +144,7 @@ public class FluentProcessIt {
         .dontCloseAfterLast()
         .start()
         .stream();
-    Assertions.assertEquals("sh: 1: 79: not found", output.collect(Collectors.joining()));
+    Assertions.assertEquals("sh: 79: command not found", output.collect(Collectors.joining()));
     try {
       output.close();
       Assertions.fail();
@@ -262,5 +287,6 @@ public class FluentProcessIt {
               .get());
     }
   }
+
 
 }

@@ -36,10 +36,16 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.ongres.process.FluentProcess.DEFAULT_SHELLPREFIX;
+import static com.ongres.process.FluentProcess.getDefaultShell;
+
 public class FluentProcessBuilder {
 
-  final String command;
-  Supplier<CustomProcessBuilder<?>> processBuilderSupplier =
+    final String command;
+    boolean asShell = false;
+    String shell;
+    String shellPrefix = DEFAULT_SHELLPREFIX;
+    Supplier<CustomProcessBuilder<?>> processBuilderSupplier =
       () -> new JdkProcessBuilder(this);
   List<String> args = new ArrayList<>();
   Map<Integer, Integer> outputs = new HashMap<>(
@@ -212,6 +218,22 @@ public class FluentProcessBuilder {
   }
 
   /**
+   * Specifies the command that will be prefixed to all shell or pipeShell runs
+   */
+  public FluentProcessBuilder shellPrefix(String prefix) {
+    this.shellPrefix = prefix;
+    return this;
+  }
+
+  /**
+   * Specifies which shell to use for shell or pipeShell
+   */
+  public FluentProcessBuilder shell(String shell) {
+    this.shell = shell;
+    return this;
+  }
+
+  /**
    * Start the process (in background) and return a {@code FluentProcess} instance wrapping the
    *  running process.
    */
@@ -230,4 +252,12 @@ public class FluentProcessBuilder {
     }
   }
 
+  public FluentProcessBuilder as$() {
+    asShell = true;
+    return this;
+  }
+
+  public String getShell() {
+    return shell==null?getDefaultShell():shell;
+  }
 }
